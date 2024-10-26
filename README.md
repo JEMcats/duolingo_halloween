@@ -12,7 +12,7 @@ Use the following steps to use your Halloween Duolingo
 
 Assuming you have relativly new hardware you should be able to use the on-device version of Halloween Duolingo.
 
-Navigate to the [demo webpage](https://jemcats.software/github_page/duolingo_halloween/ondevice.html)
+Navigate to the [demo webpage](https://jemcats.software/github_pages/duolingo_halloween/ondevice.html)
 
 # CoreML (Slow Hardware)
 
