@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Duolingo Eye Following</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #77C800;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Main scaling wrapper */
+    .wrapper {
+      position: relative;
+      width: 1024px;
+      height: 730px;
+      transform-origin: top left;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: row;
+    }
+
+    /* Scale wrapper based on viewport */
+    @media (max-width: 1024px) {
+      .wrapper {
+        transform: scale(calc(100vw / 1024));
+      }
+    }
+    @media (max-height: 730px) {
+      .wrapper {
+        transform: scale(calc(100vh / 730));
+      }
+    }
+
+    /* Main content styling */
+    #duo {
+      position: absolute;
+      top: 0;
+      left: 14.4%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    #pupil_layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #conf {
+      position: absolute;
+      bottom: 4%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 700;
+      font-size: 1.5em;
+    }
+
+    #previewImage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    #video {
+      display: none;
+    }
+  </style>
+</head>
+<body style="width: 1024px; height: 730px;" ondblclick="togglePre()">
+<div class="wrapper">
+  <img id="duo" src="duo.png" style="height: 100%; z-index: 0; ">
+  <svg id="pupil_layer" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 334.6 117.72" style="position: absolute;">
+    <defs>
+      <style>
+        .cls-3 {
+          fill: #4b4b4b;
+        }
+      </style>
+    </defs>
+    <path id="leftPupil" style="transform: translateX(87px) scale(0.55) translateY(50px); transition: 0.2s ease;" class="cls-3" d="M1.26,46.33c3.63-.24,7.4.06,10.88-.81,17.1-4.3,24.11-24.5,13.57-38.6-.79-1.06-1.67-2.06-2.83-3.49C30.56-.36,38.42-.72,46.28.94c17.53,3.7,29.7,18.35,30.08,36.29.31,14.32.32,28.65.05,42.97-.4,20.91-17.67,37.39-38.57,37.21C17.21,117.23.47,100.69.08,79.89c-.19-10.49-.02-20.99.27-32.1.49-.9.7-1.18.9-1.47Z"/>
+    <path id="rightPupil" style="transform: translateX(63px) scale(0.55) translateY(50px); transition: 0.2s ease;" class="cls-3" d="M259.26,46.64c3.63-.24,7.4.06,10.88-.81,17.1-4.3,24.11-24.5,13.57-38.6-.79-1.06-1.67-2.06-2.83-3.49,7.69-3.79,15.55-4.15,23.41-2.49,17.53,3.7,29.7,18.35,30.08,36.29.31,14.32.32,28.65.05,42.97-.4,20.91-17.67,37.39-38.57,37.21-20.62-.18-37.37-16.72-37.75-37.52-.19-10.49-.02-20.99.27-32.1.49-.9.7-1.18.9-1.47Z"/>
+  </svg>
+  <p style="position: absolute; bottom: 4%;
+font-weight: 700;" id="conf" >Loading...</p>
+    <video id="video" width="640" height="480" style="display:none;" autoplay></video>
+    <canvas id="previewImage" width="640" height="480" style=" height: 100%; display:none;"></canvas>
+</div>
+    <script>
+        let camera_setup_complete = false;
+        const wss = new WebSocket(`wss://${window.location.host}`);
+    
+        wss.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log(message);
+            // Handle received messages here, e.g., update pupil positions based on the predicted coordinates
+            if (message.action === 'ImageUpdatedNewLocation') {
+                setTransformations(message.data.data);
+
+                if (message.data.data.data !== null) {
+                    document.getElementById('conf').innerText = toPercentage(message.data.data.confidence)
+                }
+                
+            }
+        };
+        function toPercentage(value) {
+    if (value < 0 || value > 1) {
+        throw new Error("Value must be between 0 and 1");
+    }
+    return `${(value * 100).toFixed(2)}%`;
+}
+        function togglePre() {
+            const previewImage = document.getElementById('previewImage');
+            const duo = document.getElementById('duo');
+            const pupil_layer = document.getElementById('pupil_layer');
+    
+            if (previewImage.style.display == 'none') {
+                duo.style.display = 'none';
+                pupil_layer.style.display = 'none';
+                previewImage.style.display = '';
+            } else {
+                duo.style.display = '';
+                pupil_layer.style.display = '';
+                previewImage.style.display = 'none';
+            }
+        }
+    
+        function setTransformations(coordinates) {
+            // Define the center point
+            const center = { x: 0.50, y: 0.79 };
+            const left_entity = document.getElementById('leftPupil');
+            const right_entity = document.getElementById('rightPupil');
+    
+            // Calculate translation offsets based on coordinates
+            const translateX = (coordinates.centerX - center.x) * 100; // Scale to percentage
+            const translateY = (coordinates.centerY - center.y) * 100; // Scale to percentage
+    
+            const left_boundaries = {
+                x: { min: 87, max: 71 },
+                y: { min: 50, max: 0 }
+            };
+    
+            const right_boundaries = {
+                x: { min: 78, max: 63 },
+                y: { min: 50, max: 0 }
+            };
+    
+            function interpolate(min, max, offset) {
+                return min + (max - min) * offset;
+            }
+    
+            const normalizedX = (translateX + 50) / 100;
+            const normalizedY = (translateY + 50) / 100;
+    
+            const newLeftX = interpolate(left_boundaries.x.min, left_boundaries.x.max, normalizedX);
+            const newLeftY = interpolate(left_boundaries.y.min, left_boundaries.y.max, normalizedY);
+            const newRightX = interpolate(right_boundaries.x.min, right_boundaries.x.max, normalizedX);
+            const newRightY = interpolate(right_boundaries.y.min, right_boundaries.y.max, normalizedY);
+    
+            left_entity.style.transform = `translateX(${newLeftX}px) scale(0.55) translateY(${newLeftY}px)`;
+            right_entity.style.transform = `translateX(${newRightX}px) scale(0.55) translateY(${newRightY}px)`;
+        }
+    
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' }
+            }).then((stream) => {
+                const videoElement = document.getElementById('video');
+                videoElement.srcObject = stream;
+                videoElement.play(); // Ensure the video plays
+                camera_setup_complete = true;
+            }).catch((error) => {
+                console.error('Error accessing the camera:', error);
+                alert('Camera access denied or not available.');
+            });
+        }
+    
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('previewImage');
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg');
+        }
+
+        function getPixelCoordinates(normCoords) {
+            const canvas = document.getElementById('previewImage');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const topLeft = {
+                x: normCoords[0] * width,
+                y: normCoords[1] * height
+            };
+
+            const bottomRight = {
+                x: normCoords[2] * width,
+                y: normCoords[3] * height
+            };
+
+            return { topLeft, bottomRight };
+        }
+
+        // Function to draw a box given the pixel coordinates
+        function drawBox(points) {
+            const canvas = document.getElementById('previewImage');
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.rect(points.topLeft.x, points.topLeft.y, 
+                     points.bottomRight.x - points.topLeft.x, 
+                     points.bottomRight.y - points.topLeft.y);
+            ctx.closePath();
+            ctx.strokeStyle = 'blue'; // Set stroke color
+            ctx.lineWidth = 2;        // Set stroke width
+            ctx.stroke();             // Apply stroke
+        }
+    
+        // Adjusted interval to capture the image every second
+        setInterval(() => {
+            if (camera_setup_complete) {
+                const newSnap = captureImage();
+                wss.send(JSON.stringify({'action':'UpdatePicture', 'data': {'img': newSnap}}));
+            }
+        }, 200); // 1000 ms = 1 second
+    
+        window.onload = startCamera;
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+selfsigned.crt
+selfsigned.key
+package-lock.json
+latestimage.jpeg
+.DS_STORE
+.DS_Store
+node_modules
