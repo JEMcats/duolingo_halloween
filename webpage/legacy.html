@@ -80,9 +80,36 @@
     #video {
       display: none;
     }
+    .fullscreen-btn {
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    position: absolute;
+top: 1%;
+right: 1%;
+  }
+
+  /* SVG styling */
+  .icon {
+    width: 50px;
+    height: 50px;
+    stroke: #333;
+  }
   </style>
 </head>
 <body style="width: 1024px; height: 730px;" ondblclick="togglePre()">
+  <button id="fullscreenBtn" class="fullscreen-btn" onclick="toggleFullscreen()">
+    <!-- Default icon for entering fullscreen -->
+    <svg id="enterIcon" class="icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="M4 12 L4 4 12 4 M20 4 L28 4 28 12 M4 20 L4 28 12 28 M28 20 L28 28 20 28" />
+    </svg>
+  
+    <!-- Icon for exiting fullscreen, hidden by default -->
+    <svg id="exitIcon" class="icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="display: none;">
+        <path d="M4 12 L12 12 12 4 M20 4 L20 12 28 12 M4 20 L12 20 12 28 M28 20 L20 20 20 28" />
+    </svg>
+  </button>
 <div class="wrapper">
   <img id="duo" src="duo.png" style="height: 100%; z-index: 0; ">
   <svg id="pupil_layer" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 334.6 117.72" style="position: absolute;">
@@ -102,6 +129,27 @@ font-weight: 700;" id="conf" >Loading...</p>
     <canvas id="previewImage" width="640" height="480" style=" height: 100%; display:none;"></canvas>
 </div>
     <script>
+        function toggleFullscreen() {
+    const enterIcon = document.getElementById('enterIcon');
+    const exitIcon = document.getElementById('exitIcon');
+    const fullscreenElem = document.documentElement;
+
+    if (!document.fullscreenElement) {
+      fullscreenElem.requestFullscreen().then(() => {
+        enterIcon.style.display = 'none';
+        exitIcon.style.display = '';
+      }).catch((err) => {
+        console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        enterIcon.style.display = '';
+        exitIcon.style.display = 'none';
+      }).catch((err) => {
+        console.error(`Error attempting to exit fullscreen mode: ${err.message}`);
+      });
+    }
+  }
         let camera_setup_complete = false;
         const wss = new WebSocket(`wss://${window.location.host}`);
     
